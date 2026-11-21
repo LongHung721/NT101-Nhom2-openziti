@@ -1,0 +1,2 @@
+GET  /  -> HTTP 200
+POST /  -> HTTP 405

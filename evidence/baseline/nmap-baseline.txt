@@ -1,0 +1,10 @@
+# Nmap 7.991 scan initiated Sat Nov 21 14:30:49 2026 as: /usr/lib/nmap/nmap -sS -sV -p- -T4 --reason -n -oN /evidence/baseline/nmap-baseline.txt -oX /evidence/baseline/nmap-baseline.xml 172.28.0.10
+Nmap scan report for 172.28.0.10
+Host is up, received arp-response (0.000021s latency).
+Not shown: 65534 closed tcp ports (reset)
+PORT   STATE SERVICE REASON         VERSION
+80/tcp open  http    syn-ack ttl 64 nginx 1.27.5
+MAC Address: 76:A6:64:89:F3:BD (Unknown)
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Sat Nov 21 14:30:58 2026 -- 1 IP address (1 host up) scanned in 8.77 seconds

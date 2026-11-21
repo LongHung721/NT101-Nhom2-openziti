@@ -1,0 +1,13 @@
+Thời điểm (UTC): 2026-11-21 14:30:44
+Docker version 29.9.2, build a82e528
+Docker Compose version v5.6.1
+--- nmap trong container attacker ---
+Nmap version 7.991 ( https://nmap.org )
+Platform: x86_64-pc-linux-gnu
+--- tcpdump trong container sniffer ---
+tcpdump version 4.99.6
+--- image đang dùng ---
+/zt-baseline-web: nginx:1.27-alpine
+/zt-attacker: ziti-lab/kali:local
+/zt-sniffer: ziti-lab/kali:local
+/zt-client: ziti-lab/client:local

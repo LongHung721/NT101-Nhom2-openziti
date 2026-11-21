@@ -1,0 +1,23 @@
+=== Dòng request (chữ rõ) ===
+GET / HTTP/1.1
+POST / HTTP/1.1
+
+=== Dòng response ===
+HTTP/1.1 200 OK
+HTTP/1.1 405 Not Allowed
+
+=== Header tiết lộ thông tin ===
+Host: web
+Authorization: Basic ZGVtby11c2VyOkRlbW9AMTIz
+User-Agent: ziti-lab-client/1.0
+Server: nginx/1.27.5
+Host: web
+User-Agent: curl/8.14.1
+Server: nginx/1.27.5
+
+=== Nội dung form gửi đi (body) ===
+username=demo-user&password=Demo@123
+
+=== Giải mã Authorization: Basic (base64) ===
+base64   : ZGVtby11c2VyOkRlbW9AMTIz
+giải mã  : demo-user:Demo@123
