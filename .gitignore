@@ -1,0 +1,17 @@
+# --- Bí mật và danh tính Ziti: TUYỆT ĐỐI KHÔNG commit ---
+.env
+*.jwt
+identities/
+*.identity.json
+
+# --- Dữ liệu sinh ra khi chạy ---
+# (thư mục do bản all-in-one của OpenZiti tạo ra, nếu dùng)
+quickstart/
+ziti-data/
+
+# --- Hệ thống / trình soạn thảo ---
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/

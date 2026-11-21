@@ -1,0 +1,96 @@
+# ============================================================
+# GIAI ĐOẠN 1: LAB BASELINE (CHƯA CÓ OPENZITI)
+# Mục đích: tạo mốc đối chứng "trước khi bảo vệ".
+# Web server có công khai cổng 80, nên nmap thấy được và tcpdump đọc được nội dung.
+#
+# Chạy:   docker compose -f docker-compose.baseline.yml up -d --build
+# Hoặc dùng script:  ./scripts/10-baseline-run.sh
+# ============================================================
+name: ziti-lab-baseline
+
+# Dùng chung một cách build cho attacker và sniffer (cùng image Kali)
+x-kali-build: &kali-build
+  context: ./images/kali
+
+services:
+  # --- Dịch vụ nội bộ cần bảo vệ (mục tiêu) ---
+  web:
+    image: nginx:${NGINX_VERSION:-1.27-alpine}
+    container_name: zt-baseline-web
+    ports:
+      - "${WEB_HOST_PORT:-8080}:80"      # BASELINE: cố ý mở cổng
+    volumes:
+      - ./baseline/web:/usr/share/nginx/html:ro
+    networks:
+      baseline-net:
+        ipv4_address: 172.28.0.10
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # --- Kẻ tấn công: chạy nmap từ mạng ngoài vào web ---
+  attacker:
+    build: *kali-build
+    image: ziti-lab/kali:local
+    container_name: zt-attacker
+    hostname: attacker
+    cap_add: [NET_ADMIN, NET_RAW]        # nmap -sS và tcpdump cần quyền raw socket
+    tty: true
+    stdin_open: true
+    command: ["sleep", "infinity"]
+    volumes:
+      - ./evidence:/evidence
+      - ./scripts/container:/lab-scripts:ro
+    networks:
+      baseline-net:
+        ipv4_address: 172.28.0.20
+    depends_on:
+      web:
+        condition: service_healthy
+
+  # --- Người nghe lén trên đường truyền tới web ---
+  # Dùng chung network namespace với web để thấy mọi gói tin vào/ra web.
+  # Đây mô phỏng kẻ ở "giữa đường" (switch/router/Wi-Fi bị chiếm quyền).
+  # Cần thiết vì trên Docker bridge, một container thường KHÔNG thấy lưu lượng
+  # giữa hai container khác.
+  sniffer:
+    build: *kali-build
+    image: ziti-lab/kali:local
+    container_name: zt-sniffer
+    network_mode: "service:web"
+    cap_add: [NET_ADMIN, NET_RAW]
+    command: ["sleep", "infinity"]
+    volumes:
+      - ./evidence:/evidence
+      - ./scripts/container:/lab-scripts:ro
+    depends_on:
+      web:
+        condition: service_healthy
+
+  # --- Người dùng hợp lệ: tạo lưu lượng thật tới web ---
+  client:
+    build:
+      context: ./images/client
+      args:
+        ALPINE_VERSION: ${ALPINE_VERSION:-3.20}
+    image: ziti-lab/client:local
+    container_name: zt-client
+    hostname: client
+    command: ["sleep", "infinity"]
+    networks:
+      baseline-net:
+        ipv4_address: 172.28.0.30
+    depends_on:
+      web:
+        condition: service_healthy
+
+networks:
+  baseline-net:
+    name: zt-baseline-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24          # đổi nếu trùng mạng khác trên máy bạn
