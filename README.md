@@ -10,7 +10,7 @@ Lab học tập cho môn An toàn mạng máy tính: dựng mạng overlay OpenZ
 |---|---|---|
 | 0 | Chuẩn bị: repo, quy ước, kiểm tra môi trường | Có trong repo này |
 | 1 | Baseline: web + Kali, chưa có Ziti | Có trong repo này |
-| 2 | Dựng controller, router, ZAC | Chưa làm |
+| 2 | Dựng controller, router, ZAC | Có trong repo này |
 | 3-4 | Policy, đưa client/server vào overlay | Chưa làm |
 | 5 | Kiểm thử tấn công có Ziti | Chưa làm |
 
@@ -22,6 +22,7 @@ ziti-lab/
 ├── .env.example                  # mẫu cấu hình (copy thành .env)
 ├── .gitignore                    # chặn .env, *.jwt, identity
 ├── docker-compose.baseline.yml   # Giai đoạn 1
+├── docker-compose.ziti.yml       # Giai đoạn 2: controller, router, ZAC
 ├── images/
 │   ├── kali/Dockerfile           # máy tấn công / nghe lén
 │   └── client/Dockerfile         # máy người dùng hợp lệ
@@ -56,7 +57,7 @@ Checklist nhóm (mỗi người tự tick):
 - [ ] `./scripts/00-check-env.sh` báo "máy sẵn sàng"
 - [ ] `docker run hello-world` chạy được
 - [ ] Clone được repo, có file `.env` của riêng mình (không commit)
-- [ ] Cả nhóm đã thống nhất **một phiên bản OpenZiti** (điền `ZITI_VERSION` ở Giai đoạn 2)
+- [ ] Cả nhóm đã thống nhất các phiên bản `ZITI_VERSION` và `ZAC_VERSION` trong `.env`
 - [ ] Đã đọc phần Quy ước đặt tên bên dưới
 
 ## Giai đoạn 1: Baseline (không Ziti)
@@ -89,13 +90,47 @@ Bằng chứng cần chụp cho báo cáo:
 
 Dọn dẹp: `docker compose -f docker-compose.baseline.yml down` (thêm `--rmi local` nếu muốn xóa cả image đã build).
 
+## Giai đoạn 2: Controller, router và ZAC
+
+Trong WSL/Linux, tạo `.env` từ mẫu nếu chưa có và đặt một mật khẩu admin riêng:
+
+```bash
+if [ ! -f .env ]; then cp .env.example .env; fi
+# Mở .env, thay ZITI_PWD bằng mật khẩu mạnh; cả nhóm dùng cùng ZITI_VERSION.
+docker compose -f docker-compose.ziti.yml pull
+docker compose -f docker-compose.ziti.yml up -d
+docker compose -f docker-compose.ziti.yml ps
+```
+
+Compose tải image OpenZiti quickstart (`ZITI_VERSION`) và ZAC (`ZAC_VERSION`) theo phiên bản ghim trong `.env`; controller và edge router được khởi tạo tự động, còn `controller-init` là container chạy một lần để thiết lập access-control mặc định. Mẫu hiện tại ghim OpenZiti `2.0.8` và ZAC `4.8.0`; nhóm có thể cùng đổi sang cặp phiên bản khác đã xác nhận tương thích.
+
+- ZAC: <https://localhost:8443>
+- Controller Edge API: `https://localhost:1280`
+- Router edge listener: `localhost:3022`; bind listener: `localhost:10080`
+
+Các cổng host chỉ bind vào `127.0.0.1`, không mở ra mạng LAN. Trình duyệt có thể cảnh báo chứng chỉ tự ký trong lab. Dữ liệu trạng thái lưu ở Docker volume `zt-ziti-data` và tồn tại qua lần khởi động lại.
+
+Kiểm tra log nếu dịch vụ chưa sẵn sàng:
+
+```bash
+docker compose -f docker-compose.ziti.yml logs -f controller router zac
+```
+
+Dừng các container nhưng giữ dữ liệu:
+
+```bash
+docker compose -f docker-compose.ziti.yml down
+```
+
+Không xóa volume trừ khi muốn reset lab: `docker compose -f docker-compose.ziti.yml down -v`.
+
 ## Quy ước đặt tên (cả nhóm dùng chung)
 
 | Loại | Tên | Ghi chú |
 |---|---|---|
 | Tiền tố container | `zt-` | vd `zt-attacker` |
 | Container baseline | `zt-baseline-web`, `zt-attacker`, `zt-sniffer`, `zt-client` | Giai đoạn 1 |
-| Container Ziti (dự kiến) | `zt-controller`, `zt-router`, `zt-console`, `zt-web`, `zt-web-tunneler`, `zt-client-01`, `zt-client-02` | Giai đoạn 2-4 |
+| Container Ziti | `zt-controller`, `zt-router`, `zt-console`, `zt-web`, `zt-web-tunneler`, `zt-client-01`, `zt-client-02` | Giai đoạn 2-4 |
 | Docker network | `zt-baseline-net` (baseline); `zt-ctrl-net`, `zt-app-net`, `zt-attacker-net` (dự kiến) | attacker **không** nằm trong `zt-app-net` |
 | Identity | `client-01` (attribute `clients`), `client-02` (không attribute), `web-server` (attribute `servers`) | |
 | Service | `web-service` | config: `web.intercept`, `web.host` |
