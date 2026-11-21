@@ -6,6 +6,11 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
+# Git Bash trên Windows tự đổi tham số bắt đầu bằng "/" (vd /evidence/...) thành
+# "C:/Program Files/Git/evidence/...". Tắt hành vi đó. Vô hại trên Linux/macOS/WSL.
+export MSYS_NO_PATHCONV=1
+export MSYS2_ARG_CONV_EXCL="*"
+
 COMPOSE=(docker compose -f docker-compose.baseline.yml)
 OUT_HOST="evidence/baseline"
 OUT_CTR="/evidence/baseline"
